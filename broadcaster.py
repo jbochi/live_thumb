@@ -5,7 +5,7 @@ import os
 import requests
 
 
-FRAMES_PATH = '/Users/juarez.bochi/dev/live_thumb/parts'
+FRAMES_PATH = 'parts'
 PUBLISH_URL = 'http://localhost:9080/pub?id={channel}'
 
 
