@@ -1,13 +1,13 @@
 live_thumb
 ==========
 
-Live thumbnail using MJPEG and nginx_push_stream
+Live thumbnail using [MJPEG](http://en.wikipedia.org/wiki/Motion_JPEG) and [nginx_push_stream](https://github.com/wandenberg/nginx-push-stream-module).
 
 
 Usage
 -----
 
-Compile Nginx with nginx_push_stream support and run it with sample config:
+Compile Nginx with [nginx_push_stream](https://github.com/wandenberg/nginx-push-stream-module) support and run it with sample config:
 
     $ sudo /usr/local/nginx/sbin/nginx -c $PWD/nginx.conf
 
@@ -22,3 +22,5 @@ Run the broadcaster:
 Watch the movie with the example html:
 
     $ open test.html
+
+Or go to `http://localhost:9080/sub/parts` directly.
