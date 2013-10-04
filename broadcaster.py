@@ -1,17 +1,17 @@
-import time
-from watchdog.observers import Observer
+from threading import Thread
 from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
 import os
 import requests
+import time
 
-
-FRAMES_PATH = 'parts'
+FRAMES_PATH = 'frames'
 PUBLISH_URL = 'http://localhost:9080/pub?id={channel}'
 
 
 class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
-        post(event.src_path)
+        Thread(target=post, args=(event.src_path,)).start()
 
 
 def post(path):
