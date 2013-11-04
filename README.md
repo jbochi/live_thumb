@@ -11,6 +11,10 @@ Compile Nginx with [nginx_push_stream](https://github.com/wandenberg/nginx-push-
 
     $ sudo /usr/local/nginx/sbin/nginx -c $PWD/nginx.conf
 
+Make a directory to store the thumbs
+
+    $ mkdir -p frames/parts
+
 Start ffmpeg to create thumbs for a channel (`parts` in this example):
 
     $ ffmpeg -re -i rtmp://example.com/live/stream -vf "scale=159:-1" -r 3 frames/parts/thumb%9d.jpg
