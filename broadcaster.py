@@ -5,8 +5,8 @@ import os
 import requests
 import time
 
-FRAMES_PATH = 'frames'
-PUBLISH_URL = 'http://localhost:9080/pub?id={channel}'
+FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
+PUBLISH_URL = os.getenv("PUBLISH_URL", 'http://localhost:9080/pub?id={channel}')
 
 
 class EventHandler(FileSystemEventHandler):
