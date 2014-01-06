@@ -1,2 +1,2 @@
-pytest >= 2.5.1
-geventhttpclient >= 1.1
+requests >= 2.1.0
+watchdog >= 0.6.0

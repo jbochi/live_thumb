@@ -32,7 +32,7 @@ def post(path):
     os.remove(path)
 
 
-if __name__ == "__main__":
+def run():
     event_handler = EventHandler()
     observer = Observer()
     observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
@@ -45,3 +45,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         observer.stop()
     observer.join()
+
+
+if __name__ == "__main__":
+    run()
