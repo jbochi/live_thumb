@@ -11,6 +11,8 @@ PUBLISH_URL = os.getenv("PUBLISH_URL", 'http://localhost:9080/pub?id={channel}')
 
 class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
+        if os.path.isdir(event.src_path):
+            return
         Thread(target=post, args=(event.src_path,)).start()
 
 
