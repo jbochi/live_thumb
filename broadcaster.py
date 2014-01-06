@@ -11,6 +11,7 @@ import sys
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
 PUBLISH_URL = os.getenv("PUBLISH_URL", 'http://localhost:9080/pub?id={channel}')
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
+LOG_FILE = os.getenv("LOG_FILE", None)
 logger = logging.getLogger("broadcaster")
 
 class EventHandler(FileSystemEventHandler):
@@ -35,12 +36,17 @@ def post(path):
 
 
 def setup_logger():
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch = logging.StreamHandler(sys.stdout)
     ch.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     ch.setFormatter(formatter)
     logger.addHandler(ch)
     logger.setLevel(logging.DEBUG)
+    if LOG_FILE:
+        fh = logging.FileHandler(LOG_FILE)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
 
 
 def run():
