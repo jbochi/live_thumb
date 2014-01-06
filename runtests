@@ -1,0 +1,3 @@
+nginx -c $PWD/nginx.conf
+py.test
+nginx -c $PWD/nginx.conf -s stop

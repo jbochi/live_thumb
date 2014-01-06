@@ -1,7 +1,5 @@
 *.py[cod]
-
-# C extensions
-*.so
+frames/
 
 # Packages
 *.egg
@@ -25,11 +23,3 @@ pip-log.txt
 .coverage
 .tox
 nosetests.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject

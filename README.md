@@ -9,7 +9,7 @@ Usage
 
 Compile Nginx with [nginx_push_stream](https://github.com/wandenberg/nginx-push-stream-module) support and run it with sample config:
 
-    $ sudo /usr/local/nginx/sbin/nginx -c $PWD/nginx.conf
+    $ nginx -c $PWD/nginx.conf
 
 Make a directory to store the thumbs
 
