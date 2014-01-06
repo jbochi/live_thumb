@@ -2,14 +2,16 @@ from threading import Thread
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 import base64
+import logging
 import os
 import requests
 import time
+import sys
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
 PUBLISH_URL = os.getenv("PUBLISH_URL", 'http://localhost:9080/pub?id={channel}')
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
-
+logger = logging.getLogger("broadcaster")
 
 class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
@@ -26,18 +28,28 @@ def post(path):
             data = base64.b64encode(data)
         r = requests.post(PUBLISH_URL.format(channel=channel), data=data)
         if r.status_code == 200:
-            print 'Pushed {}'.format(path)
+            logger.debug('Pushed {}'.format(path))
         else:
-            print r
+            logger.error(r)
     os.remove(path)
 
 
+def setup_logger():
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.setLevel(logging.DEBUG)
+
+
 def run():
+    setup_logger()
     event_handler = EventHandler()
     observer = Observer()
     observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
     observer.start()
-    print 'started'
+    logger.info('Started')
 
     try:
         while True:
