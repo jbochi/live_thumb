@@ -31,6 +31,13 @@ Run the broadcaster:
 
     $ python broadcaster.py
 
+If you prefer, install the script using ``pip`` and run it:
+
+::
+
+    $ pip install live_thumb
+    $ broadcaster
+
 Watch the movie with the example html:
 
 ::
