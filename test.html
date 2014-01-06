@@ -5,6 +5,20 @@
   <title>MJPEG test</title>
 </head>
 <body>
+  <h1>live_thumb demo</h1>
+  <h2>Pure MJPEG example (should have base64 disabled)</h2>
+  <h3>Works on all modern browsers (not IE)</h3>
   <img src="http://localhost:9080/sub/parts" alt="parts channel"/>
+
+  <h2>Websocket demo (should have base64 enabled)</h2>
+  <h3>Works on all modern browsers, and IE >= 9</3>
+  <img id="ws"/>
+  <script>
+    var image = document.getElementById("ws");
+    var connection = new WebSocket("ws://localhost:9080/ws/parts");
+    connection.onmessage = function (e) {
+      image.src = "data:image/jpeg;base64," + e.data;
+    };
+  </script>
 </body>
 </html>
