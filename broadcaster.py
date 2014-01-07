@@ -9,7 +9,7 @@ import time
 import sys
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
-PUBLISH_URL = os.getenv("PUBLISH_URL", 'http://localhost:9080/pub?id={channel}')
+PUBLISH_URLS = os.getenv("PUBLISH_URLS", 'http://localhost:9080/pub?id={channel}').split(",")
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 logger = logging.getLogger("broadcaster")
@@ -27,11 +27,13 @@ def post(path):
         data = content.read()
         if BASE64_ENCODE:
             data = base64.b64encode(data)
-        r = requests.post(PUBLISH_URL.format(channel=channel), data=data)
-        if r.status_code == 200:
-            logger.debug('Pushed {}'.format(path))
-        else:
-            logger.error(r)
+        for publish_url in PUBLISH_URLS:
+            url = publish_url.format(channel=channel)
+            r = requests.post(url, data=data)
+            if r.status_code == 200:
+                logger.debug('Pushed {} to {}'.format(path, url))
+            else:
+                logger.error(r)
     os.remove(path)
 
 
