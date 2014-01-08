@@ -11,7 +11,7 @@ setup(
     description='MJPEG broadcaster',
     long_description=README,
     author='Globo.com',
-    version='0.0.3',
+    version='0.0.4',
     include_package_data=True,
     install_requires=install_reqs,
     py_modules=[
