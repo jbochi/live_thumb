@@ -5,14 +5,16 @@ import base64
 import logging
 import os
 import requests
-import time
+import signal
 import sys
+import time
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
 PUBLISH_URLS = os.getenv("PUBLISH_URLS", 'http://localhost:9080/pub?id={channel}').split(",")
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 logger = logging.getLogger("broadcaster")
+
 
 class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
@@ -58,6 +60,10 @@ def delete_all_files(top):
             logger.info("Removing old file {}".format(path))
             os.remove(path)
 
+def signal_handler(signal, frame):
+    logger.warning("Interrupt. Shuting down.")
+    sys.exit(0)
+
 def run():
     setup_logger()
     logger.info('Started')
@@ -66,12 +72,10 @@ def run():
     delete_all_files(FRAMES_PATH)
     observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
     observer.start()
+    signal.signal(signal.SIGINT, signal_handler)
 
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
+    while True:
+        time.sleep(1)
     observer.join()
 
 
