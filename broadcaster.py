@@ -51,13 +51,21 @@ def setup_logger():
         logger.addHandler(fh)
 
 
+def delete_all_files(top):
+    for root, dirs, files in os.walk(top, topdown=False):
+        for name in files:
+            path = os.path.join(root, name)
+            logger.info("Removing old file {}".format(path))
+            os.remove(path)
+
 def run():
     setup_logger()
+    logger.info('Started')
     event_handler = EventHandler()
     observer = Observer()
+    delete_all_files(FRAMES_PATH)
     observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
     observer.start()
-    logger.info('Started')
 
     try:
         while True:
