@@ -41,16 +41,16 @@ def post(path):
 
 def setup_logger():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    logger.setLevel(logging.DEBUG)
+    handler = None
     if LOG_FILE:
-        fh = logging.FileHandler(LOG_FILE)
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(formatter)
-        logger.addHandler(fh)
+        handler = logging.FileHandler(LOG_FILE)
+    else:
+        handler = logging.StreamHandler(sys.stdout)
+
+    logger.setLevel(logging.DEBUG)
+    handler.setLevel(logging.DEBUG)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 
 def delete_all_files(top):
