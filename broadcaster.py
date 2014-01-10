@@ -10,10 +10,14 @@ import sys
 import time
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
-PUBLISH_URLS = os.getenv("PUBLISH_URLS", 'http://localhost:9080/pub?id={channel}').split(",")
+HOST_LIST_URL = os.getenv("HOST_LIST_URL", None)
+HOST = os.getenv("HOST", "localhost")
+PORT = int(os.getenv("PORT", 9080))
+PUBLISH_URL_TEMPLATE = os.getenv("PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 logger = logging.getLogger("broadcaster")
+hosts = requests.get(HOST_LIST_URL).json() if HOST_LIST_URL else [HOST]
 
 
 class EventHandler(FileSystemEventHandler):
@@ -29,8 +33,8 @@ def post(path):
         data = content.read()
         if BASE64_ENCODE:
             data = base64.b64encode(data)
-        for publish_url in PUBLISH_URLS:
-            url = publish_url.format(channel=channel)
+        for host in hosts:
+            url = PUBLISH_URL_TEMPLATE.format(channel=channel, host=host, port=PORT)
             r = requests.post(url, data=data)
             if r.status_code == 200:
                 logger.debug('Pushed {} to {}'.format(path, url))
