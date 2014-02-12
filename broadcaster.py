@@ -16,6 +16,7 @@ PORT = int(os.getenv("PORT", 9080))
 PUBLISH_URL_TEMPLATE = os.getenv("PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
+LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
 hosts = requests.get(HOST_LIST_URL).json() if HOST_LIST_URL else [HOST]
 
@@ -51,8 +52,8 @@ def setup_logger():
     else:
         handler = logging.StreamHandler(sys.stdout)
 
-    logger.setLevel(logging.DEBUG)
-    handler.setLevel(logging.DEBUG)
+    logger.setLevel(LOG_LEVEL)
+    handler.setLevel(LOG_LEVEL)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
@@ -61,7 +62,7 @@ def delete_all_files(top):
     for root, dirs, files in os.walk(top, topdown=False):
         for name in files:
             path = os.path.join(root, name)
-            logger.info("Removing old file {}".format(path))
+            logger.debug("Removing old file {}".format(path))
             os.remove(path)
 
 def signal_handler(signal, frame):
