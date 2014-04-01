@@ -59,7 +59,7 @@ def post(path):
                 timestamp = os.path.getmtime(path)
                 r.zadd(channel, timestamp, key)
                 r.setex(key, REDIS_TTL, data)
-                logger.debug('Pushed {} to {}. Key={}, Timestamp='.format(path, redis_host, key, timestamp))
+                logger.debug('Pushed {} to {}. Key={}, timestamp={}'.format(path, redis_host, key, timestamp))
             except Exception as err:
                 logger.error(err)
     os.remove(path)
