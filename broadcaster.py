@@ -17,16 +17,16 @@ HTTP_HOST_LIST_URL = os.getenv("HTTP_HOST_LIST_URL", None)
 HTTP_HOST = os.getenv("HTTP_HOST", "localhost")
 HTTP_PORT = int(os.getenv("HTTP_PORT", 9080))
 HTTP_PUBLISH_URL_TEMPLATE = os.getenv("HTTP_PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
-HTTP_BASE64_ENCODE = "HTTP_BASE64_ENCODE" in os.environ
 http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
 
 REDIS_HOST_LIST_URL = os.getenv("REDIS_HOST_LIST_URL", None)
 REDIS_HOST = os.getenv("REDIS_HOST", "")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
-REDIS_TTL = int(os.getenv("REDIS_TTL", 10))
+REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
+BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
@@ -43,7 +43,7 @@ def post(path):
     channel = os.path.basename(os.path.dirname(path))
     with open(path, 'rb') as content:
         data = content.read()
-        if HTTP_BASE64_ENCODE:
+        if BASE64_ENCODE:
             data = base64.b64encode(data)
         for http_host in [h for h in http_hosts if h]:
             url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
