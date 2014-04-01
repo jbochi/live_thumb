@@ -10,15 +10,15 @@ import sys
 import time
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
-HOST_LIST_URL = os.getenv("HOST_LIST_URL", None)
-HOST = os.getenv("HOST", "localhost")
-PORT = int(os.getenv("PORT", 9080))
-PUBLISH_URL_TEMPLATE = os.getenv("PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
-BASE64_ENCODE = "BASE64_ENCODE" in os.environ
+HTTP_HOST_LIST_URL = os.getenv("HTTP_HOST_LIST_URL", None)
+HTTP_HOST = os.getenv("HTTP_HOST", "localhost")
+HTTP_PORT = int(os.getenv("HTTP_PORT", 9080))
+HTTP_PUBLISH_URL_TEMPLATE = os.getenv("HTTP_PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
+HTTP_BASE64_ENCODE = "HTTP_BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
-hosts = requests.get(HOST_LIST_URL).json() if HOST_LIST_URL else [HOST]
+http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
 
 
 class EventHandler(FileSystemEventHandler):
@@ -32,10 +32,10 @@ def post(path):
     channel = os.path.basename(os.path.dirname(path))
     with open(path, 'rb') as content:
         data = content.read()
-        if BASE64_ENCODE:
+        if HTTP_BASE64_ENCODE:
             data = base64.b64encode(data)
-        for host in hosts:
-            url = PUBLISH_URL_TEMPLATE.format(channel=channel, host=host, port=PORT)
+        for http_host in http_hosts:
+            url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
             r = requests.post(url, data=data)
             if r.status_code == 200:
                 logger.debug('Pushed {} to {}'.format(path, url))
@@ -65,9 +65,11 @@ def delete_all_files(top):
             logger.debug("Removing old file {}".format(path))
             os.remove(path)
 
+
 def signal_handler(signal, frame):
     logger.warning("Interrupt. Shuting down.")
     sys.exit(0)
+
 
 def run():
     setup_logger()
