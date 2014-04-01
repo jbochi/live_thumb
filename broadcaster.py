@@ -53,10 +53,15 @@ def post(path):
             else:
                 logger.error(r)
         for redis_host in [h for h in redis_hosts if h]:
-            r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB)
-            key = uuid.uuid4()
-            r.zadd(channel, os.path.getmtime(path), key)
-            r.setex(key, REDIS_TTL, data)
+            try:
+                r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB)
+                key = uuid.uuid4()
+                timestamp = os.path.getmtime(path)
+                r.zadd(channel, timestamp, key)
+                r.setex(key, REDIS_TTL, data)
+                logger.debug('Pushed {} to {}. Key={}, Timestamp='.format(path, redis_host, key, timestamp))
+            except Exception as err:
+                logger.error(err)
     os.remove(path)
 
 
