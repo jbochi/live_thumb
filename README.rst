@@ -56,7 +56,7 @@ To also store the snapshots on redis, you should run the broadcaster with an ext
 
 ::
 
-    $ python broadcaster.py
+    $ REDIS_HOST="localhost" python broadcaster.py
 
 
 The snapshots will be served from ``http://localhost:9080/snapshot/parts``. You can also specify a timestamp: ``http://localhost:9080/snapshot/parts?timestamp=1396381230``
