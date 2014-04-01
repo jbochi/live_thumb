@@ -1,7 +1,8 @@
+from base64 import b64encode
 from geventhttpclient import HTTPClient, URL
 from multiprocessing.pool import ThreadPool
-from base64 import b64encode
 import os
+import redis
 import subprocess
 import tempfile
 import time
@@ -61,3 +62,15 @@ def test_contents_are_encoded():
     data = r.get(timeout=2).read(buffer_size)
     assert "JPEG IMAGE" not in data
     assert b64encode("JPEG IMAGE") in data
+
+def test_image_is_posted_to_redis():
+    tempdir = tempfile.mkdtemp()
+    r = redis.StrictRedis(host='localhost', port=7000, db=0)
+    r.delete("channel")
+    now = time.time()
+    p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000"})
+    create_image(tempdir, "channel", "JPEG IMAGE")
+    p.terminate()
+    keys = r.zrangebyscore("channel", min=str(int(now)), max="+inf", start=0, num=1)
+    assert len(keys) == 1
+    assert r.get(keys[0]) == "JPEG IMAGE"

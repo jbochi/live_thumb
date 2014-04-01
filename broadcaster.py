@@ -4,21 +4,32 @@ from watchdog.observers import Observer
 import base64
 import logging
 import os
+import redis
 import requests
 import signal
 import sys
 import time
+import uuid
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
+
 HTTP_HOST_LIST_URL = os.getenv("HTTP_HOST_LIST_URL", None)
 HTTP_HOST = os.getenv("HTTP_HOST", "localhost")
 HTTP_PORT = int(os.getenv("HTTP_PORT", 9080))
 HTTP_PUBLISH_URL_TEMPLATE = os.getenv("HTTP_PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
 HTTP_BASE64_ENCODE = "HTTP_BASE64_ENCODE" in os.environ
+http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
+
+REDIS_HOST_LIST_URL = os.getenv("REDIS_HOST_LIST_URL", None)
+REDIS_HOST = os.getenv("REDIS_HOST", "")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_DB = int(os.getenv("REDIS_DB", 0))
+REDIS_TTL = int(os.getenv("REDIS_TTL", 10))
+redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
+
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
-http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
 
 
 class EventHandler(FileSystemEventHandler):
@@ -34,13 +45,18 @@ def post(path):
         data = content.read()
         if HTTP_BASE64_ENCODE:
             data = base64.b64encode(data)
-        for http_host in http_hosts:
+        for http_host in [h for h in http_hosts if h]:
             url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
             r = requests.post(url, data=data)
             if r.status_code == 200:
                 logger.debug('Pushed {} to {}'.format(path, url))
             else:
                 logger.error(r)
+        for redis_host in [h for h in redis_hosts if h]:
+            r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB)
+            key = uuid.uuid4()
+            r.zadd(channel, os.path.getmtime(path), key)
+            r.setex(key, REDIS_TTL, data)
     os.remove(path)
 
 
