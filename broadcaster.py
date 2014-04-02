@@ -57,9 +57,9 @@ def post(path):
                 r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB)
                 key = uuid.uuid4()
                 timestamp = os.path.getmtime(path)
-                r.zremrangebyscore(key, "-inf", timestamp - REDIS_TTL)
                 r.zadd(channel, timestamp, key)
                 r.setex(key, REDIS_TTL, data)
+                r.zremrangebyscore(channel, "-inf", timestamp - REDIS_TTL)
                 logger.debug('Pushed {} to {}. Key={}, timestamp={}'.format(path, redis_host, key, timestamp))
             except Exception as err:
                 logger.error(err)

@@ -13,10 +13,10 @@ def get_async():
     async_result = pool.apply_async(get)
     return async_result
 
-def get():
-    url = URL("http://localhost:9080/sub/channel")
+def get(path="/sub/channel"):
+    url = URL("http://localhost:9080/" + path)
     http = HTTPClient.from_url(url)
-    response = http.get(url.path)
+    response = http.get(path)
     return response
 
 def run_broadcaster(frames_path, envs={}):
@@ -29,7 +29,8 @@ def run_broadcaster(frames_path, envs={}):
 
 def create_image(tempdir, channel, content):
     image_dir = os.path.join(tempdir, channel)
-    os.mkdir(image_dir)
+    if not os.path.exists(image_dir):
+        os.mkdir(image_dir)
     image = tempfile.NamedTemporaryFile(dir=image_dir, delete=False)
     image.write(content)
     image.close()
@@ -74,3 +75,15 @@ def test_image_is_posted_to_redis():
     keys = r.zrangebyscore("channel", min=str(int(now)), max="+inf", start=0, num=1)
     assert len(keys) == 1
     assert r.get(keys[0]) == "JPEG IMAGE"
+
+def test_image_can_be_get_from_redis():
+    tempdir = tempfile.mkdtemp()
+    r = redis.StrictRedis(host='localhost', port=7000, db=0)
+    r.delete("channel")
+    now = time.time()
+    p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000"})
+    create_image(tempdir, "channel", "JPEG IMAGE")
+    create_image(tempdir, "channel", "NEW JPEG IMAGE")
+    p.terminate()
+    assert get("/snapshot/channel?timestamp=%d" % (now - 1)).read() == "JPEG IMAGE"
+    assert get("/snapshot/channel").read() == "NEW JPEG IMAGE"
