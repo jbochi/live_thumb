@@ -54,7 +54,7 @@ def test_file_is_deleted_after_post():
 
 def test_contents_are_encoded():
     tempdir = tempfile.mkdtemp()
-    p = run_broadcaster(tempdir, envs={"HTTP_BASE64_ENCODE": "1"})
+    p = run_broadcaster(tempdir, envs={"BASE64_ENCODE": "1"})
     r = get_async()
     create_image(tempdir, "channel", "JPEG IMAGE")
     p.terminate()
