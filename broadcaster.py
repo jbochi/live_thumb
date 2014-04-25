@@ -23,6 +23,7 @@ REDIS_HOST_LIST_URL = os.getenv("REDIS_HOST_LIST_URL", None)
 REDIS_HOST = os.getenv("REDIS_HOST", "")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
@@ -54,7 +55,7 @@ def post(path):
                 logger.error(r)
         for redis_host in [h for h in redis_hosts if h]:
             try:
-                r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB)
+                r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
                 key = uuid.uuid4()
                 timestamp = os.path.getmtime(path)
                 r.zadd(channel, timestamp, key)
