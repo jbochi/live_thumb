@@ -44,11 +44,10 @@ def post(path):
     channel = os.path.basename(os.path.dirname(path))
     with open(path, 'rb') as content:
         data = content.read()
-        if BASE64_ENCODE:
-            data = base64.b64encode(data)
+        http_data = base64.b64encode(data) if BASE64_ENCODE else data
         for http_host in [h for h in http_hosts if h]:
             url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
-            r = requests.post(url, data=data)
+            r = requests.post(url, data=http_data)
             if r.status_code == 200:
                 logger.debug('Pushed {} to {}'.format(path, url))
             else:
