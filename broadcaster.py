@@ -4,6 +4,7 @@ from watchdog.observers import Observer
 import base64
 import logging
 import os
+import re
 import redis
 import requests
 import signal
@@ -25,6 +26,7 @@ REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
+REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be post to redis
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
@@ -61,6 +63,12 @@ def post_http(channel, data, path):
 
 
 def post_redis(channel, data, path):
+    digits = re.findall("(\d+)", path)
+    if digits:
+        count = int(digits[-1]) % REDIS_SAMPLE_RATE
+        if count != 0:
+            logger.debug('Image {} not sampled ({}/{}).'.format(path, count, REDIS_SAMPLE_RATE))
+            return
     for redis_host in [h for h in redis_hosts if h]:
         try:
             r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
