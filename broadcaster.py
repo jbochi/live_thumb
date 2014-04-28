@@ -45,25 +45,33 @@ def post(path):
     with open(path, 'rb') as content:
         data = content.read()
         http_data = base64.b64encode(data) if BASE64_ENCODE else data
-        for http_host in [h for h in http_hosts if h]:
-            url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
-            r = requests.post(url, data=http_data)
-            if r.status_code == 200:
-                logger.debug('Pushed {} to {}'.format(path, url))
-            else:
-                logger.error(r)
-        for redis_host in [h for h in redis_hosts if h]:
-            try:
-                r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
-                key = uuid.uuid4()
-                timestamp = os.path.getmtime(path)
-                r.zadd(channel, timestamp, key)
-                r.setex(key, REDIS_TTL, data)
-                r.zremrangebyscore(channel, "-inf", timestamp - REDIS_TTL)
-                logger.debug('Pushed {} to {}. Key={}, timestamp={}'.format(path, redis_host, key, timestamp))
-            except Exception as err:
-                logger.error(err)
+        post_http(channel, http_data, path)
+        post_redis(channel, data, path)
     os.remove(path)
+
+
+def post_http(channel, data, path):
+    for http_host in [h for h in http_hosts if h]:
+        url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
+        r = requests.post(url, data=data)
+        if r.status_code == 200:
+            logger.debug('Pushed {} to {}'.format(path, url))
+        else:
+            logger.error(r)
+
+
+def post_redis(channel, data, path):
+    for redis_host in [h for h in redis_hosts if h]:
+        try:
+            r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
+            key = uuid.uuid4()
+            timestamp = os.path.getmtime(path)
+            r.zadd(channel, timestamp, key)
+            r.setex(key, REDIS_TTL, data)
+            r.zremrangebyscore(channel, "-inf", timestamp - REDIS_TTL)
+            logger.debug('Pushed {} to {}. Key={}, timestamp={}'.format(path, redis_host, key, timestamp))
+        except Exception as err:
+            logger.error(err)
 
 
 def setup_logger():
