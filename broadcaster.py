@@ -114,14 +114,20 @@ def run():
     logger.info('Started')
     event_handler = EventHandler()
     observer = Observer()
-    delete_all_files(FRAMES_PATH)
-    observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
-    observer.start()
-    signal.signal(signal.SIGINT, signal_handler)
+    try:
+        delete_all_files(FRAMES_PATH)
+        observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
+        observer.start()
+        signal.signal(signal.SIGINT, signal_handler)
 
-    while True:
-        time.sleep(1)
-    observer.join()
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.warning("Keyboard interruption. Shuting down.")
+    except Exception as err:
+        logger.error(err)
+    finally:
+        observer.join()
 
 
 if __name__ == "__main__":
