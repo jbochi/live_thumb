@@ -73,7 +73,8 @@ def post_redis(channel, data, path):
         try:
             r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
 
-            channel_ttl = r.get("thumb/" + channel + "/ttl") or REDIS_TTL
+            channel_ttl = r.get("thumb/" + channel + "/ttl")
+            channel_ttl = int(channel_ttl) if channel_ttl else REDIS_TTL
 
             key = "thumb/" + channel
             blob_key = "blob/" + str(uuid.uuid4())
