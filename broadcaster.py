@@ -72,12 +72,15 @@ def post_redis(channel, data, path):
     for redis_host in [h for h in redis_hosts if h]:
         try:
             r = redis.StrictRedis(host=redis_host, port=REDIS_PORT, db=REDIS_DB, password=REDIS_PASSWORD)
+
+            channel_ttl = r.get("thumb/" + channel + "/ttl") or REDIS_TTL
+
             key = "thumb/" + channel
             blob_key = "blob/" + str(uuid.uuid4())
             timestamp = os.path.getmtime(path)
             r.zadd(key, timestamp, blob_key)
-            r.setex(blob_key, REDIS_TTL, data)
-            r.zremrangebyscore(key, "-inf", timestamp - REDIS_TTL)
+            r.setex(blob_key, channel_ttl, data)
+            r.zremrangebyscore(key, "-inf", timestamp - channel_ttl)
             logger.debug('Pushed {} to {}. Key={}, timestamp={}'.format(path, redis_host, blob_key, timestamp))
         except Exception as err:
             logger.error(err)
