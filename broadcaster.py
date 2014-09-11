@@ -34,6 +34,13 @@ LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
 
+def log_on_error(func):
+    def f(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except Exception as err:
+            logger.exception(err)
+    return f
 
 class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
@@ -42,6 +49,7 @@ class EventHandler(FileSystemEventHandler):
         Thread(target=post, args=(event.src_path,)).start()
 
 
+@log_on_error
 def post(path):
     channel = os.path.basename(os.path.dirname(path))
     with open(path, 'rb') as content:
@@ -52,6 +60,7 @@ def post(path):
     os.remove(path)
 
 
+@log_on_error
 def post_http(channel, data, path):
     for http_host in [h for h in http_hosts if h]:
         url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
@@ -62,6 +71,7 @@ def post_http(channel, data, path):
             logger.error(r)
 
 
+@log_on_error
 def post_redis(channel, data, path):
     digits = re.findall("(\d+)", path)
     if digits:
