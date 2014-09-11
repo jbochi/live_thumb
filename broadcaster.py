@@ -64,7 +64,7 @@ def post(path):
 def post_http(channel, data, path):
     for http_host in [h for h in http_hosts if h]:
         url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
-        r = requests.post(url, data=data)
+        r = requests.post(url, data=data, timeout=0.5)
         if r.status_code == 200:
             logger.debug('Pushed {} to {}'.format(path, url))
         else:
