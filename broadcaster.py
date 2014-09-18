@@ -50,7 +50,12 @@ class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
         if os.path.isdir(event.src_path):
             return
-        pool.apply_async(func=post, args=(event.src_path,))
+        post_async(event.src_path)
+
+
+@log_on_error
+def post_async(path):
+    return pool.apply_async(func=post, args=(path,))
 
 
 @log_on_error
