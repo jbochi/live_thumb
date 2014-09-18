@@ -2,6 +2,7 @@ from threading import Thread
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from multiprocessing.pool import ThreadPool
+import datetime
 import base64
 import logging
 import os
@@ -47,7 +48,12 @@ def log_on_error(func):
     return f
 
 class EventHandler(FileSystemEventHandler):
+    def __init__(self, *args, **kwargs):
+        super(EventHandler, self).__init__(*args, **kwargs)
+        self.last_event = datetime.datetime.now()
+
     def on_created(self, event):
+        self.last_event = datetime.datetime.now()
         if os.path.isdir(event.src_path):
             return
         post_async(event.src_path)
@@ -146,6 +152,10 @@ def run():
 
         while True:
             time.sleep(1)
+            now = datetime.datetime.now()
+            if now - event_handler.last_event > datetime.timedelta(minutes=1):
+                event_handler.last_event = now
+                logger.warning("No events received in the last minute.")
     except KeyboardInterrupt:
         logger.warning("Keyboard interruption. Shuting down.")
     except Exception as err:
