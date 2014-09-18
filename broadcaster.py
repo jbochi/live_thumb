@@ -1,6 +1,7 @@
 from threading import Thread
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
+from multiprocessing.pool import ThreadPool
 import base64
 import logging
 import os
@@ -29,10 +30,13 @@ REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
 REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be post to redis
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
+WORKERS = int(os.getenv("WORKERS", 50))
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
+
+pool = ThreadPool(processes=WORKERS)
 
 def log_on_error(func):
     def f(*args, **kwargs):
@@ -46,7 +50,7 @@ class EventHandler(FileSystemEventHandler):
     def on_created(self, event):
         if os.path.isdir(event.src_path):
             return
-        Thread(target=post, args=(event.src_path,)).start()
+        pool.apply_async(func=post, args=(event.src_path,))
 
 
 @log_on_error
