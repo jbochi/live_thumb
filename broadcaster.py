@@ -78,13 +78,18 @@ def post(path):
 
 @log_on_error
 def post_http(channel, data, path):
-    for http_host in [h for h in http_hosts if h]:
-        url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=http_host, port=HTTP_PORT)
-        r = requests.post(url, data=data, timeout=0.5)
-        if r.status_code == 200:
-            logger.debug('Pushed {} to {}'.format(path, url))
-        else:
-            logger.error(r)
+    for host in [h for h in http_hosts if h]:
+        post_http_to_host(channel, data, path, host)
+
+
+@log_on_error
+def post_http_to_host(channel, data, path, host):
+    url = HTTP_PUBLISH_URL_TEMPLATE.format(channel=channel, host=host, port=HTTP_PORT)
+    r = requests.post(url, data=data, timeout=0.5)
+    if r.status_code == 200:
+        logger.debug('Pushed {} to {}'.format(path, url))
+    else:
+        logger.error(r)
 
 
 @log_on_error
