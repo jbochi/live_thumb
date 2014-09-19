@@ -13,6 +13,7 @@ import signal
 import sys
 import time
 import uuid
+import multiprocessing
 
 FRAMES_PATH = os.getenv("FRAMES_PATH", 'frames')
 
@@ -31,7 +32,7 @@ REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
 REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be post to redis
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
-WORKERS = int(os.getenv("WORKERS", 50))
+WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count()))
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
