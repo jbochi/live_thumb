@@ -33,6 +33,7 @@ REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be 
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
 WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count()))
+EVENT_QUEUE_MAX_SIZE = int(os.getenv("EVENT_QUEUE_MAX_SIZE", WORKERS * 2))
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
@@ -149,7 +150,8 @@ def run():
     setup_logger()
     logger.info('Started')
     event_handler = EventHandler()
-    observer = Observer()
+    observer = Observer(timeout=0.1)
+    observer.event_queue.maxsize = EVENT_QUEUE_MAX_SIZE
     try:
         delete_all_files(FRAMES_PATH)
         observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
@@ -160,8 +162,10 @@ def run():
             time.sleep(1)
             now = datetime.datetime.now()
             if now - event_handler.last_event > datetime.timedelta(minutes=1):
+                logger.warning("No events received in the last minute. "
+                               "Unfinished tasks: %d" % observer.event_queue.unfinished_tasks)
+                assert observer.is_alive()
                 event_handler.last_event = now
-                logger.warning("No events received in the last minute.")
     except KeyboardInterrupt:
         logger.warning("Keyboard interruption. Shuting down.")
     except Exception as err:
