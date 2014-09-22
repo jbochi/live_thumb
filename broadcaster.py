@@ -162,10 +162,10 @@ def run():
             time.sleep(1)
             now = datetime.datetime.now()
             if now - event_handler.last_event > datetime.timedelta(minutes=1):
-                logger.warning("No events received in the last minute. "
-                               "Unfinished tasks: %d" % observer.event_queue.unfinished_tasks)
-                assert observer.is_alive()
-                event_handler.last_event = now
+                logger.warning("No events received in the last minute.")
+                # Sometimes watchdog stops receiving events.
+                # We exit, so the process can be restarted.
+                sys.exit(1)
     except KeyboardInterrupt:
         logger.warning("Keyboard interruption. Shuting down.")
     except Exception as err:
