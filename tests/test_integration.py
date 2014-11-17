@@ -72,7 +72,7 @@ def test_image_is_posted_to_redis():
     p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
     create_image(tempdir, "channel", "JPEG IMAGE")
     p.terminate()
-    keys = r.zrangebyscore("channel", min=str(int(now)), max="+inf", start=0, num=1)
+    keys = r.zrangebyscore("thumb/channel", min=str(now - 1), max=str(now + 1), start=0, num=1)
     assert len(keys) == 1
     assert r.get(keys[0]) == "JPEG IMAGE"
 
