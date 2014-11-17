@@ -68,7 +68,7 @@ def test_contents_are_encoded():
 def test_image_is_posted_to_redis_with_utctimestamp():
     tempdir = tempfile.mkdtemp()
     r = redis.StrictRedis(host='localhost', port=7000, db=0)
-    r.delete("channel")
+    r.delete("thumb/channel")
     now = int(time.mktime(datetime.datetime.utcnow().timetuple()))
     p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
     create_image(tempdir, "channel", "JPEG IMAGE")
@@ -77,14 +77,26 @@ def test_image_is_posted_to_redis_with_utctimestamp():
     assert len(keys) == 1
     assert r.get(keys[0]) == "JPEG IMAGE"
 
-def test_image_can_be_get_from_redis():
+def test_image_can_be_get_from_nginx():
     tempdir = tempfile.mkdtemp()
     r = redis.StrictRedis(host='localhost', port=7000, db=0)
-    r.delete("channel")
+    r.delete("thumb/channel")
     now = time.time()
     p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
     create_image(tempdir, "channel", "JPEG IMAGE")
     create_image(tempdir, "channel", "NEW JPEG IMAGE")
     p.terminate()
     assert get("/snapshot/channel?timestamp=%d" % (now - 1)).read() == "JPEG IMAGE"
+    assert get("/snapshot/channel").read() == "NEW JPEG IMAGE"
+
+def test_image_can_be_get_from_nginx_with_utctimestamp():
+    tempdir = tempfile.mkdtemp()
+    r = redis.StrictRedis(host='localhost', port=7000, db=0)
+    r.delete("thumb/channel")
+    utcnow = int(time.mktime(datetime.datetime.utcnow().timetuple()))
+    p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
+    create_image(tempdir, "channel", "JPEG IMAGE")
+    create_image(tempdir, "channel", "NEW JPEG IMAGE")
+    p.terminate()
+    assert get("/snapshot/channel?utc=%d" % (utcnow - 1)).read() == "JPEG IMAGE"
     assert get("/snapshot/channel").read() == "NEW JPEG IMAGE"
