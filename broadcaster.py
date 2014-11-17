@@ -110,10 +110,11 @@ def post_redis(channel, data, path):
             key = "thumb/" + channel
             blob_key = "blob/" + str(uuid.uuid4())
             timestamp = os.path.getmtime(path)
-            r.zadd(key, timestamp, blob_key)
+            utctimestamp = int(time.mktime(datetime.datetime.utcfromtimestamp(timestamp).timetuple()))
+            r.zadd(key, utctimestamp, blob_key)
             r.setex(blob_key, channel_ttl, data)
-            r.zremrangebyscore(key, "-inf", timestamp - channel_ttl)
-            logger.debug('Pushed {} to {}. Key={}, timestamp={}'.format(path, redis_host, blob_key, timestamp))
+            r.zremrangebyscore(key, "-inf", utctimestamp - channel_ttl)
+            logger.debug('Pushed {} to {}. Key={}, utctimestamp={}'.format(path, redis_host, blob_key, utctimestamp))
         except Exception as err:
             logger.error(err)
 
