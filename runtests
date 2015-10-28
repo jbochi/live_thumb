@@ -1,5 +1,2 @@
-nginx -c $PWD/nginx.conf
-redis-server --port 7000 > /dev/null &
-py.test
-nginx -c $PWD/nginx.conf -s stop
-pkill redis-server
+#!/bin/bash
+docker-compose run --rm live_thumb
