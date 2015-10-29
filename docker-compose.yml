@@ -1,0 +1,24 @@
+live_thumb:
+  build: .
+  command: py.test -vs tests
+  volumes:
+    - .:/app
+  environment:
+    - PYTHONPATH=.
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - HTTP_HOST=nginx
+    - HTTP_PORT=80
+  links:
+    - redis
+    - nginx
+
+redis:
+  image: redis:latest
+
+nginx:
+  image: lucasmundim/nginx-lua-push-stream:latest
+  volumes:
+    - ./nginx.conf:/config/nginx.conf
+  links:
+    - redis

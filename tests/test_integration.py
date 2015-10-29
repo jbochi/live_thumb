@@ -15,7 +15,7 @@ def get_async():
     return async_result
 
 def get(path="/sub/channel"):
-    url = URL("http://localhost:9080/" + path)
+    url = URL("http://%s/%s" % (os.getenv("HTTP_HOST", 'localhost'), path))
     http = HTTPClient.from_url(url)
     response = http.get(path)
     return response
@@ -67,10 +67,10 @@ def test_contents_are_encoded():
 
 def test_image_is_posted_to_redis_with_utctimestamp():
     tempdir = tempfile.mkdtemp()
-    r = redis.StrictRedis(host='localhost', port=7000, db=0)
+    r = redis.StrictRedis(host=os.getenv("REDIS_HOST", 'localhost'), port=int(os.getenv("REDIS_PORT", 7000)), db=0)
     r.delete("thumb/channel")
     now = int(time.mktime(datetime.datetime.utcnow().timetuple()))
-    p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
+    p = run_broadcaster(tempdir, envs={"REDIS_SAMPLE_RATE": "1"})
     create_image(tempdir, "channel", "JPEG IMAGE")
     p.terminate()
     keys = r.zrangebyscore("thumb/channel", min=str(now - 1), max=str(now + 1), start=0, num=1)
@@ -79,10 +79,10 @@ def test_image_is_posted_to_redis_with_utctimestamp():
 
 def test_image_can_be_get_from_nginx():
     tempdir = tempfile.mkdtemp()
-    r = redis.StrictRedis(host='localhost', port=7000, db=0)
+    r = redis.StrictRedis(host=os.getenv("REDIS_HOST", 'localhost'), port=int(os.getenv("REDIS_PORT", 7000)), db=0)
     r.delete("thumb/channel")
     now = time.time()
-    p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
+    p = run_broadcaster(tempdir, envs={"REDIS_SAMPLE_RATE": "1"})
     create_image(tempdir, "channel", "JPEG IMAGE")
     create_image(tempdir, "channel", "NEW JPEG IMAGE")
     p.terminate()
@@ -91,10 +91,10 @@ def test_image_can_be_get_from_nginx():
 
 def test_image_can_be_get_from_nginx_with_utctimestamp():
     tempdir = tempfile.mkdtemp()
-    r = redis.StrictRedis(host='localhost', port=7000, db=0)
+    r = redis.StrictRedis(host=os.getenv("REDIS_HOST", 'localhost'), port=int(os.getenv("REDIS_PORT", 7000)), db=0)
     r.delete("thumb/channel")
     utcnow = int(time.mktime(datetime.datetime.utcnow().timetuple()))
-    p = run_broadcaster(tempdir, envs={"HTTP_HOST": "", "REDIS_HOST": "localhost", "REDIS_PORT": "7000", "REDIS_SAMPLE_RATE": "1"})
+    p = run_broadcaster(tempdir, envs={"REDIS_SAMPLE_RATE": "1"})
     create_image(tempdir, "channel", "JPEG IMAGE")
     create_image(tempdir, "channel", "NEW JPEG IMAGE")
     p.terminate()
