@@ -20,6 +20,7 @@ HTTP_HOST_LIST_URL = os.getenv("HTTP_HOST_LIST_URL", None)
 HTTP_HOST = os.getenv("HTTP_HOST", "localhost")
 HTTP_PORT = int(os.getenv("HTTP_PORT", 9080))
 HTTP_PUBLISH_URL_TEMPLATE = os.getenv("HTTP_PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
+HTTP_FILTER_CHANNEL = os.getenv("HTTP_FILTER_CHANNEL", None) # Regex to filter channels
 http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
 
 REDIS_HOST_LIST_URL = os.getenv("REDIS_HOST_LIST_URL", None)
@@ -79,6 +80,8 @@ def post(path):
 
 @log_on_error
 def post_http(channel, data, path):
+    if HTTP_FILTER_CHANNEL and not re.compile(HTTP_FILTER_CHANNEL).match(channel):
+        return
     for host in [h for h in http_hosts if h]:
         post_http_to_host(channel, data, path, host)
 
