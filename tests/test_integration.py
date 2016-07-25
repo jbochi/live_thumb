@@ -89,6 +89,22 @@ def test_image_can_be_get_from_nginx():
     assert get("/snapshot/channel?timestamp=%d" % (now - 1)).read() == "JPEG IMAGE"
     assert get("/snapshot/channel").read() == "NEW JPEG IMAGE"
 
+def test_only_filtered_channel_images_can_be_get_from_nginx():
+    tempdir = tempfile.mkdtemp()
+    r = redis.StrictRedis(host=os.getenv("REDIS_HOST", 'localhost'), port=int(os.getenv("REDIS_PORT", 7000)), db=0)
+    r.delete("thumb/channel")
+    now = time.time()
+    p = run_broadcaster(tempdir, envs={"REDIS_SAMPLE_RATE": "1", "REDIS_FILTER_CHANNEL": "^channel$" })
+
+    create_image(tempdir, "channel", "JPEG IMAGE")
+    create_image(tempdir, "blocked_channel", "BLOCKED JPEG IMAGE")
+    create_image(tempdir, "channel", "NEW JPEG IMAGE")
+    create_image(tempdir, "blocked_channel2", "ANOTHER BLOCKED JPEG IMAGE")
+
+    p.terminate()
+    assert get("/snapshot/blocked_channel").read() == "null"
+    assert get("/snapshot/channel").read() == "NEW JPEG IMAGE"
+
 def test_image_can_be_get_from_nginx_with_utctimestamp():
     tempdir = tempfile.mkdtemp()
     r = redis.StrictRedis(host=os.getenv("REDIS_HOST", 'localhost'), port=int(os.getenv("REDIS_PORT", 7000)), db=0)

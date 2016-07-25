@@ -29,6 +29,7 @@ REDIS_DB = int(os.getenv("REDIS_DB", 0))
 REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
 REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be post to redis
+REDIS_FILTER_CHANNEL = os.getenv("REDIS_FILTER_CHANNEL", None) # Regex to filter channels
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
 WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count()))
@@ -94,6 +95,9 @@ def post_http_to_host(channel, data, path, host):
 
 @log_on_error
 def post_redis(channel, data, path):
+    if REDIS_FILTER_CHANNEL and not re.compile(REDIS_FILTER_CHANNEL).match(channel):
+        return
+
     digits = re.findall("(\d+)", path)
     if digits:
         count = int(digits[-1]) % REDIS_SAMPLE_RATE
