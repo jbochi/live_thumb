@@ -25,6 +25,8 @@ HTTP_PUBLISH_URL_TEMPLATE = os.getenv("HTTP_PUBLISH_URLS_TEMPLATE", 'http://{hos
 HTTP_FILTER_CHANNEL = os.getenv("HTTP_FILTER_CHANNEL", None) # Regex to filter channels
 http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
 
+HTTP_REGEX = re.compile(HTTP_FILTER_CHANNEL) if HTTP_FILTER_CHANNEL else None
+
 REDIS_HOST_LIST_URL = os.getenv("REDIS_HOST_LIST_URL", None)
 REDIS_HOST = os.getenv("REDIS_HOST", "")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
@@ -33,6 +35,8 @@ REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
 REDIS_TTL = int(os.getenv("REDIS_TTL", 60))
 REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be post to redis
 REDIS_FILTER_CHANNEL = os.getenv("REDIS_FILTER_CHANNEL", None) # Regex to filter channels
+REDIS_REGEX = re.compile(REDIS_FILTER_CHANNEL) if REDIS_FILTER_CHANNEL else None
+
 redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
 WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count()))
@@ -78,7 +82,7 @@ def post(path):
 
 @log_on_error
 def post_http(channel, data, path):
-    if HTTP_FILTER_CHANNEL and not re.compile(HTTP_FILTER_CHANNEL).match(channel):
+    if HTTP_FILTER_CHANNEL and not HTTP_REGEX.match(channel):
         return
     for host in [h for h in http_hosts if h]:
         post_http_to_host(channel, data, path, host)
@@ -96,7 +100,7 @@ def post_http_to_host(channel, data, path, host):
 
 @log_on_error
 def post_redis(channel, data, path):
-    if REDIS_FILTER_CHANNEL and not re.compile(REDIS_FILTER_CHANNEL).match(channel):
+    if REDIS_FILTER_CHANNEL and not REDIS_REGEX.match(channel):
         return
 
     digits = re.findall("(\d+)", path)
