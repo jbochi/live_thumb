@@ -1,3 +1,4 @@
 requests >= 2.8.1
 watchdog >= 0.8.3
+pyinotify==0.9.6
 redis >= 2.10.3
