@@ -102,7 +102,7 @@ def test_only_filtered_channel_images_can_be_get_from_nginx():
     create_image(tempdir, "blocked_channel2", "ANOTHER BLOCKED JPEG IMAGE")
 
     p.terminate()
-    assert get("/snapshot/blocked_channel").read() == "null"
+    assert get("/snapshot/blocked_channel").get_code() == 404
     assert get("/snapshot/channel").read() == "NEW JPEG IMAGE"
 
 def test_image_can_be_get_from_nginx_with_utctimestamp():
