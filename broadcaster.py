@@ -1,7 +1,8 @@
 from threading import Thread
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
+import multiprocessing
 import datetime
 import base64
 import logging
@@ -9,6 +10,7 @@ import os
 import re
 import redis
 import requests
+import signal
 import sys
 import time
 import uuid
@@ -35,12 +37,12 @@ redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL el
 
 WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count()))
 EVENT_QUEUE_MAX_SIZE = int(os.getenv("EVENT_QUEUE_MAX_SIZE", WORKERS * 2))
+MAX_TASKS_PER_WORKER = int(os.getenv("MAX_TASKS_PER_WORKER", 10))
 BASE64_ENCODE = "BASE64_ENCODE" in os.environ
 LOG_FILE = os.getenv("LOG_FILE", None)
 LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "debug").upper())
 logger = logging.getLogger("broadcaster")
 
-pool = ThreadPool(processes=WORKERS)
 
 def log_on_error(func):
     def f(*args, **kwargs):
@@ -51,20 +53,16 @@ def log_on_error(func):
     return f
 
 class EventHandler(FileSystemEventHandler):
-    def __init__(self, *args, **kwargs):
-        super(EventHandler, self).__init__(*args, **kwargs)
+    def __init__(self, queue):
+        super(EventHandler, self).__init__()
+        self.queue = queue
         self.last_event = datetime.datetime.now()
 
     def on_created(self, event):
         self.last_event = datetime.datetime.now()
         if os.path.isdir(event.src_path):
             return
-        post_async(event.src_path)
-
-
-@log_on_error
-def post_async(path):
-    return pool.apply_async(func=post, args=(path,))
+        self.queue.put_nowait(event.src_path)
 
 
 @log_on_error
@@ -140,6 +138,10 @@ def setup_logger():
     logger.addHandler(handler)
 
 
+def to_milliseconds(time_in_seconds):
+    return int(time_in_seconds * 1000)
+
+
 def delete_all_files(top):
     for root, dirs, files in os.walk(top, topdown=False):
         for name in files:
@@ -147,19 +149,63 @@ def delete_all_files(top):
             logger.debug("Removing old file {}".format(path))
             os.remove(path)
 
+def worker(queue):
+    executed = 0
+    worker_uuid = uuid.uuid4()
+    try:
+        logger.debug('[Worker:%s] started', worker_uuid)
+        while executed < MAX_TASKS_PER_WORKER:
+            executed += 1
+            live_thumb_path = queue.get()
+            try:
+                logger.debug('[Worker:%s] picked up live_thumb: %s', worker_uuid, live_thumb_path)
+                process_start = time.time()
+                post(live_thumb_path)
+                logger.info('[EVENT:live_thumb_processed] live_thumb_path=%s process_time_ms=%s',
+                            live_thumb_path,
+                            to_milliseconds(time.time() - process_start))
+            except Exception as err:
+                logger.exception(err)
+    except Exception as err:
+        logger.exception(err)
+    sys.exit(0)
+
+
+def signal_handler(signum, _):
+    logger.warning("Interrupt signal %s. Shutting down.", signum)
+    sys.exit(0)
+
+
+def init_observer():
+    try:
+        from inotify_observer import InotifyObserver
+        Observer = InotifyObserver
+    except ImportError:
+        logger.warning("pyinotify not found. Falling back to watchdog")
+        from watchdog.observers.polling import PollingObserver
+        Observer = PollingObserver
+
+    observer = Observer(timeout=0.5)
+    return observer
 
 def run():
     setup_logger()
     logger.info('Started')
-    event_handler = EventHandler()
-    observer = Observer(timeout=0.1)
-    observer.event_queue.maxsize = EVENT_QUEUE_MAX_SIZE
+    queue = multiprocessing.Queue(maxsize=EVENT_QUEUE_MAX_SIZE)
+    pool = Pool(processes=WORKERS,
+            initializer=worker,
+            initargs=(queue,))
+
+    event_handler = EventHandler(queue)
+    observer = init_observer()
     try:
         delete_all_files(FRAMES_PATH)
         observer.schedule(event_handler, path=FRAMES_PATH, recursive=True)
+        signal.signal(signal.SIGINT, signal_handler)
         observer.start()
 
         while True:
+            pool._maintain_pool() #restart workers if needed
             time.sleep(1)
             now = datetime.datetime.now()
             if now - event_handler.last_event > datetime.timedelta(minutes=1):
@@ -174,6 +220,7 @@ def run():
     finally:
         observer.stop()
     observer.join()
+    pool.terminate()
     logger.warning("Bye")
 
 
