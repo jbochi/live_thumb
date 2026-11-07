@@ -23,7 +23,7 @@ HTTP_HOST = os.getenv("HTTP_HOST", "localhost")
 HTTP_PORT = int(os.getenv("HTTP_PORT", 9080))
 HTTP_PUBLISH_URL_TEMPLATE = os.getenv("HTTP_PUBLISH_URLS_TEMPLATE", 'http://{host}:{port}/pub?id={channel}')
 HTTP_FILTER_CHANNEL = os.getenv("HTTP_FILTER_CHANNEL", None) # Regex to filter channels
-http_hosts = requests.get(HTTP_HOST_LIST_URL).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
+http_hosts = requests.get(HTTP_HOST_LIST_URL, timeout=30).json() if HTTP_HOST_LIST_URL else [HTTP_HOST]
 
 HTTP_REGEX = re.compile(HTTP_FILTER_CHANNEL) if HTTP_FILTER_CHANNEL else None
 
@@ -37,7 +37,7 @@ REDIS_SAMPLE_RATE = int(os.getenv("REDIS_SAMPLE_RATE", 8)) # 1/8 images will be 
 REDIS_FILTER_CHANNEL = os.getenv("REDIS_FILTER_CHANNEL", None) # Regex to filter channels
 REDIS_REGEX = re.compile(REDIS_FILTER_CHANNEL) if REDIS_FILTER_CHANNEL else None
 
-redis_hosts = requests.get(REDIS_HOST_LIST_URL).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
+redis_hosts = requests.get(REDIS_HOST_LIST_URL, timeout=30).json() if REDIS_HOST_LIST_URL else [REDIS_HOST]
 
 WORKERS = int(os.getenv("WORKERS", multiprocessing.cpu_count()))
 EVENT_QUEUE_MAX_SIZE = int(os.getenv("EVENT_QUEUE_MAX_SIZE", WORKERS * 2))
